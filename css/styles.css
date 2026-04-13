@@ -855,7 +855,7 @@ body::before {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-/* ─── Responsive basic ──────────────────────────────────────────────── */
+/* ─── Responsive avanzado (Mobile) ──────────────────────────────────── */
 @media (max-width: 900px) {
   .dash-panels { grid-template-columns: 1fr; }
   .dash-stats  { grid-template-columns: 1fr 1fr; }
@@ -863,11 +863,80 @@ body::before {
 }
 
 @media (max-width: 640px) {
-  :root { --sidebar-w: 64px; }
-  .brand-text, .nav-label, .nav-separator { display: none; }
-  .sidebar { padding: 16px 8px; align-items: center; }
-  .sidebar__brand { justify-content: center; padding: 8px 0 16px; }
-  .nav-item { justify-content: center; padding: 12px; }
-  .content-area { padding: 20px 14px; }
+  :root { --sidebar-w: 0px; }
+  
+  /* Convertimos el sidebar en un Bottom Nav tipo App Nativa */
+  .sidebar { 
+    height: 70px; 
+    width: 100vw; 
+    top: auto; 
+    bottom: 0; 
+    left: 0; 
+    flex-direction: row; 
+    padding: 0 10px;
+    border-right: none; 
+    border-top: 1px solid var(--glass-border);
+    justify-content: space-around;
+    background: rgba(13, 17, 23, 0.85); /* Un poco más transparente */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  .sidebar__brand, .sidebar__footer, .nav-separator { display: none; }
+  
+  .sidebar__nav { 
+    flex-direction: row; 
+    gap: 0; 
+    width: 100%; 
+    justify-content: space-around; 
+    align-items: center; 
+  }
+  
+  .nav-item { 
+    flex-direction: column; 
+    padding: 8px 4px; 
+    gap: 4px; 
+    border-radius: 12px; 
+    width: 70px; 
+    justify-content: center; 
+  }
+  
+  .nav-item.nav--active {
+    box-shadow: none;
+    background: rgba(59, 130, 246, 0.15);
+  }
+  
+  .nav-item:hover { transform: translateY(-2px); }
+  .nav-icon { font-size: 1.3rem; margin: 0; }
+  .nav-label { font-size: 0.65rem; display: block; font-weight: 600; }
+  
+  /* Contenido y Layout */
+  .main-wrapper { 
+    margin-left: 0; 
+    margin-bottom: 70px; /* Dejar espacio para el bottom nav */
+  }
+  
+  .content-area { padding: 75px 16px 20px; }
+  
+  /* Topbar ajustado */
+  .topbar-user { 
+    top: 16px; 
+    right: 16px; 
+    left: 16px; 
+    display: flex; 
+    justify-content: flex-end; 
+  }
+  
+  /* Tarjetas y UI general */
+  .marcar-card { padding: 30px 20px; text-align: center; }
+  .marcar-title { font-size: 1.3rem; }
+  .marcar-subtitle { font-size: 0.85rem; }
   .dash-stats { grid-template-columns: 1fr; }
+  .stat-card { padding: 20px; }
+  .login-card { padding: 35px 24px; width: calc(100% - 32px); margin: 16px; }
+  
+  .admin-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .input-group--inline { flex-direction: column; align-items: flex-start; }
+  .filter-bar .btn { width: 100%; }
 }
