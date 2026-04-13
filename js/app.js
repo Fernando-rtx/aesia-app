@@ -235,13 +235,10 @@ function setupMarcarForm(container) {
           outOfBounds = true;
         }
       } catch (err) {
-        const proceed = confirm(`⚠️ GPS Error: ${err.message}\nNo pudimos validar tu ubicación. ¿Registrar de todas formas?`);
-        if (!proceed) {
-          btn.disabled = false;
-          btn.innerHTML = `<span class="btn-text">Registrar con GPS 📍</span>`;
-          return;
-        }
-        outOfBounds = true; // Si no hay GPS también se considera dudoso
+        alert(`⚠️ Para poder registrar tu asistencia, debes encender tu GPS y aceptar los permisos de ubicación en tu navegador.\n\nDetalle: ${err.message}`);
+        btn.disabled = false;
+        btn.innerHTML = `<span class="btn-text">Registrar con GPS 📍</span>`;
+        return;
       }
 
       // Guardar Record
