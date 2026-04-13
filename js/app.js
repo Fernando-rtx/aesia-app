@@ -4,14 +4,16 @@
 import {
   getMemberByCarnet, saveRecord, getNextAction,
   saveMember, deleteMember, getMembers,
-  checkAdminPass, filterRecords, exportToCSV, deleteRecord,
-  auth, loginWithGoogle, logout, onAuthChange
+  filterRecords, exportToCSV, deleteRecord,
+  auth, loginWithGoogle, logout, onAuthChange,
+  isCurrentUserAdmin
 } from './db.js';
 
 import {
   renderDashboard, renderMarcar, renderMembers, renderHistorial,
   showMarcarResult, showMarcarError,
-  renderMemberForm, renderRecordsTable, renderMembers as reloadMembers
+  renderMemberForm, renderRecordsTable, renderMembers as reloadMembers,
+  esc
 } from './ui.js';
 
 // ─── Ubicación AESIA (UES FMOcc) ────────────────────────────────────────────────
@@ -21,7 +23,6 @@ const MAX_DISTANCE_METERS = 50;
 
 // ─── Estado Global ────────────────────────────────────────────────────────────
 let currentView = 'dashboard';
-let adminUnlocked = false;
 let clockInterval = null;
 
 // ─── Inicialización ───────────────────────────────────────────────────────────
@@ -29,12 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
   setupClock();
   
   // Escuchar estado de sesión
-  onAuthChange(user => {
+  onAuthChange(async (user) => {
     const overlay = document.getElementById('login-overlay');
     const userInfo = document.getElementById('user-info');
     if (user) {
       overlay.classList.add('hidden');
-      if (userInfo) userInfo.innerHTML = `<img src="${user.photoURL}" class="avatar-small"/> ${user.email} <button id="logout-btn" class="btn-icon">🚪</button>`;
+      // Sanitizar email y photoURL al inyectar en HTML
+      const safeEmail = esc(user.email);
+      const safePhoto = esc(user.photoURL);
+      if (userInfo) userInfo.innerHTML = `<img src="${safePhoto}" class="avatar-small" referrerpolicy="no-referrer"/> ${safeEmail} <button id="logout-btn" class="btn-icon">🚪</button>`;
       document.getElementById('logout-btn')?.addEventListener('click', logout);
       
       // Primera vez, o si no hemos cargado nada
@@ -134,36 +138,14 @@ async function navigateTo(view) {
   }, 200);
 }
 
-// ─── Modal Admin Login ────────────────────────────────────────────────────────
-function requireAdmin(onSuccess) {
-  if (adminUnlocked) { onSuccess(); return; }
-
-  const modal = document.getElementById('admin-modal');
-  modal.classList.remove('hidden');
-  modal.querySelector('#admin-pass-input').value = '';
-  modal.querySelector('#admin-error').textContent = '';
-  modal.querySelector('#admin-pass-input').focus();
-
-  modal.querySelector('#admin-login-btn').onclick = () => {
-    const pass = modal.querySelector('#admin-pass-input').value;
-    if (checkAdminPass(pass)) {
-      adminUnlocked = true;
-      modal.classList.add('hidden');
-      onSuccess();
-    } else {
-      modal.querySelector('#admin-error').textContent = 'Contraseña incorrecta';
-      modal.querySelector('#admin-pass-input').select();
-    }
-  };
-
-  modal.querySelector('#admin-cancel-btn').onclick = () => {
-    modal.classList.add('hidden');
-  };
-
-  modal.querySelector('#admin-pass-input').onkeydown = (e) => {
-    if (e.key === 'Enter') modal.querySelector('#admin-login-btn').click();
-    if (e.key === 'Escape') modal.querySelector('#admin-cancel-btn').click();
-  };
+// ─── Verificación de Admin (sin contraseña, basada en rol de Firestore) ──────
+async function requireAdmin(onSuccess) {
+  const admin = await isCurrentUserAdmin();
+  if (admin) {
+    onSuccess();
+  } else {
+    alert('🔒 Acceso denegado.\n\nTu cuenta no tiene permisos de administrador. Contacta al administrador de AESIA.');
+  }
 }
 
 // ─── Helpers Geolocalización ──────────────────────────────────────────────────

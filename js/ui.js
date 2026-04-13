@@ -6,6 +6,18 @@ import {
   exportToCSV, getRecords,
 } from './db.js';
 
+// ─── Sanitización XSS ────────────────────────────────────────────────────────
+// Escapa caracteres peligrosos para prevenir inyección de HTML/scripts.
+export function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function formatDateTime(isoString) {
@@ -84,10 +96,10 @@ export async function renderDashboard(container) {
             : `<ul class="inside-list">
                 ${inside.map(p => `
                   <li class="inside-item">
-                    <div class="avatar">${p.name.charAt(0).toUpperCase()}</div>
+                    <div class="avatar">${esc(p.name.charAt(0).toUpperCase())}</div>
                     <div class="inside-info">
-                      <span class="inside-name">${p.name}</span>
-                      <span class="inside-meta">${p.carnet} · ${p.career}</span>
+                      <span class="inside-name">${esc(p.name)}</span>
+                      <span class="inside-meta">${esc(p.carnet)} · ${esc(p.career)}</span>
                     </div>
                     <span class="inside-time">${timeDiff(p.since)}</span>
                   </li>
@@ -106,7 +118,7 @@ export async function renderDashboard(container) {
                   const { time } = formatDateTime(r.timestamp);
                   return `
                     <li class="record-mini-item">
-                      <span class="record-mini-name">${m ? m.name : r.carnet} 
+                      <span class="record-mini-name">${esc(m ? m.name : r.carnet)} 
                         ${r.outOfBounds ? '<span title="Fuera del rango permitido">🗺️</span>' : ''}
                       </span>
                       ${badge(r.action)}
@@ -168,7 +180,7 @@ export function showMarcarResult(container, record, member, action) {
   result.innerHTML = `
     <div class="result-icon">${isEntrada ? '✅' : '👋'}</div>
     <div class="result-title">${isEntrada ? '¡Bienvenid@!' : '¡Hasta pronto!'}</div>
-    <div class="result-name">${member ? member.name : record.carnet}</div>
+    <div class="result-name">${esc(member ? member.name : record.carnet)}</div>
     <div class="result-detail">
       ${isEntrada ? 'Entrada' : 'Salida'} registr. a las <strong>${time}</strong>
       ${record.outOfBounds ? '<br/><span style="color:var(--amber);">⚠️ Registrado fuera del rango</span>' : ''}
@@ -191,7 +203,7 @@ export function showMarcarError(container, message) {
   result.innerHTML = `
     <div class="result-icon">❌</div>
     <div class="result-title">Aviso</div>
-    <div class="result-detail">${message}</div>
+    <div class="result-detail">${esc(message)}</div>
   `;
   setTimeout(() => {
     result.classList.add('fade-out');
@@ -233,16 +245,16 @@ export async function renderMembers(container) {
 
 function memberCard(m) {
   return `
-    <div class="member-card glass-panel" data-carnet="${m.carnet}">
-      <div class="member-avatar">${m.name.charAt(0).toUpperCase()}</div>
+    <div class="member-card glass-panel" data-carnet="${esc(m.carnet)}">
+      <div class="member-avatar">${esc(m.name.charAt(0).toUpperCase())}</div>
       <div class="member-info">
-        <div class="member-name">${m.name}</div>
-        <div class="member-carnet">🪪 ${m.carnet}</div>
-        <div class="member-career">🎓 ${m.career || '—'}</div>
+        <div class="member-name">${esc(m.name)}</div>
+        <div class="member-carnet">🪪 ${esc(m.carnet)}</div>
+        <div class="member-career">🎓 ${esc(m.career || '—')}</div>
       </div>
       <div class="member-actions">
-        <button class="btn-icon btn-icon--edit" data-carnet="${m.carnet}" title="Editar">✏️</button>
-        <button class="btn-icon btn-icon--delete" data-carnet="${m.carnet}" title="Eliminar">🗑️</button>
+        <button class="btn-icon btn-icon--edit" data-carnet="${esc(m.carnet)}" title="Editar">✏️</button>
+        <button class="btn-icon btn-icon--delete" data-carnet="${esc(m.carnet)}" title="Eliminar">🗑️</button>
       </div>
     </div>
   `;
@@ -258,12 +270,12 @@ export function renderMemberForm(container, member = null) {
           <div class="input-group">
             <label class="input-label">Nombre completo *</label>
             <input type="text" id="f-name" class="input-field" placeholder="Nombre Apellido"
-              value="${isEdit ? member.name : ''}" required>
+              value="${isEdit ? esc(member.name) : ''}" required>
           </div>
           <div class="input-group">
             <label class="input-label">Carnet *</label>
             <input type="text" id="f-carnet" class="input-field" placeholder="AB12345"
-              value="${isEdit ? member.carnet : ''}" ${isEdit ? 'readonly' : ''} required>
+              value="${isEdit ? esc(member.carnet) : ''}" ${isEdit ? 'readonly' : ''} required>
           </div>
           <div class="input-group">
             <label class="input-label">Carrera</label>
@@ -278,7 +290,7 @@ export function renderMemberForm(container, member = null) {
           <div class="input-group">
             <label class="input-label">Ciclo / Año</label>
             <input type="text" id="f-cycle" class="input-field" placeholder="Ej: 5° Ciclo 2024"
-              value="${isEdit && member.cycle ? member.cycle : ''}">
+              value="${isEdit && member.cycle ? esc(member.cycle) : ''}">
           </div>
         </div>
         <div class="form-actions">
@@ -366,15 +378,15 @@ export function renderRecordsTable(records, members) {
     return `
       <tr>
         <td class="td-num">${i + 1}</td>
-        <td><code class="carnet-code">${r.carnet}</code></td>
-        <td>${m ? m.name : '<em class="text-dim">Desconocido</em>'}</td>
+        <td><code class="carnet-code">${esc(r.carnet)}</code></td>
+        <td>${m ? esc(m.name) : '<em class="text-dim">Desconocido</em>'}</td>
         <td>${locBadge}</td>
         <td>${badge(r.action)}</td>
         <td class="text-dim">${date}</td>
         <td><strong>${time}</strong></td>
         <td>
           <button class="btn-icon btn-icon--delete delete-record-btn"
-            data-id="${r.id}" title="Eliminar registro">🗑️</button>
+            data-id="${esc(r.id)}" title="Eliminar registro">🗑️</button>
         </td>
       </tr>
     `;

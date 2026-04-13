@@ -34,13 +34,37 @@ export function onAuthChange(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-// ─── Contraseña Admin ─────────────────────────────────────────────────────────
-// Por simplicidad, en lugar de guardarla en Firestore (lo cual requeriría otra colección),
-// usaremos una variable estática o podríamos validarlo contra una lista blanca de emails admin en Firestore.
-// Como el usuario pidió admin simple, lo mantendremos ofuscado aquí para compatibilidad.
-export function checkAdminPass(pass) {
-  return pass === 'aesia2024';
+// ─── Sistema de Roles Admin ───────────────────────────────────────────────────
+// El rol de admin se almacena en la colección "admins" de Firestore.
+// Solo se puede escribir a esa colección vía Admin SDK (script local),
+// nunca desde el navegador (bloqueado por Firestore Rules).
+let _adminCacheChecked = false;
+let _isAdmin = false;
+
+export async function isCurrentUserAdmin() {
+  const user = auth.currentUser;
+  if (!user) return false;
+
+  // Cachear para no hacer lecturas repetidas a Firestore
+  if (_adminCacheChecked) return _isAdmin;
+
+  try {
+    const docRef = doc(db, "admins", user.uid);
+    const snap = await getDoc(docRef);
+    _isAdmin = snap.exists();
+  } catch (e) {
+    console.warn("Error verificando rol admin:", e);
+    _isAdmin = false;
+  }
+  _adminCacheChecked = true;
+  return _isAdmin;
 }
+
+// Resetear caché al cambiar usuario
+onAuthStateChanged(auth, () => {
+  _adminCacheChecked = false;
+  _isAdmin = false;
+});
 
 // ─── Miembros ─────────────────────────────────────────────────────────────────
 export async function getMembers() {
@@ -74,8 +98,10 @@ export async function getMemberByCarnet(carnet) {
 
 // ─── Registros de Marcación ───────────────────────────────────────────────────
 export async function saveRecord(record) {
+  const user = auth.currentUser;
   record.timestamp = new Date().toISOString();
-  record.userEmail = auth.currentUser ? auth.currentUser.email : 'anónimo';
+  record.userEmail = user ? user.email : 'anónimo';
+  record.uid = user ? user.uid : null; // Asociar con UID del usuario autenticado
   const docRef = await addDoc(collection(db, "records"), record);
   return { id: docRef.id, ...record };
 }

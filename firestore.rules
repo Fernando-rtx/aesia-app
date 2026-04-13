@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Función helper: ¿el usuario actual es admin?
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ADMINS: solo el propio admin puede leer su doc. Nadie escribe vía cliente.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // Solo se escribe vía Admin SDK (script local)
+    }
+
+    // MIEMBROS: cualquier usuario autenticado lee, solo admins escriben/eliminan
+    match /members/{carnet} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // REGISTROS: cualquier usuario autenticado lee y crea, solo admins eliminan
+    match /records/{recordId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+  }
+}

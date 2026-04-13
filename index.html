@@ -72,31 +72,7 @@
     </div>
   </div>
 
-  <!-- ░░ MODAL ADMIN LOGIN ░░ -->
-  <div class="modal-overlay hidden" id="admin-modal" role="dialog" aria-modal="true" aria-label="Acceso administrador">
-    <div class="modal glass-panel">
-      <div class="modal__icon">🔐</div>
-      <h2 class="modal__title">Acceso Administrador</h2>
-      <p class="modal__subtitle">Ingresa la contraseña para continuar</p>
-      <div class="input-group">
-        <div class="input-wrapper">
-          <span class="input-icon">🔑</span>
-          <input
-            type="password"
-            id="admin-pass-input"
-            class="input-field"
-            placeholder="Contraseña"
-            autocomplete="current-password"
-          />
-        </div>
-      </div>
-      <p class="admin-error" id="admin-error"></p>
-      <div class="modal__actions">
-        <button class="btn btn--ghost" id="admin-cancel-btn">Cancelar</button>
-        <button class="btn btn--primary" id="admin-login-btn">Ingresar</button>
-      </div>
-    </div>
-  </div>
+  <!-- Admin: verificación automática por rol en Firestore (sin modal de contraseña) -->
 
   <!-- ░░ OVERLAY de fondo para modales ░░ -->
   <script type="module" src="js/ui.js"></script>
