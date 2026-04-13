@@ -47,7 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Primera vez, o si no hemos cargado nada
       if (document.getElementById('main-content').innerHTML === '') {
+        // Verificar rol admin para mostrar/ocultar pestañas
+        const admin = await isCurrentUserAdmin();
         setupNavigation();
+        applyNavVisibility(admin);
         navigateTo('marcar');
       }
     } else {
@@ -102,6 +105,20 @@ function setupNavigation() {
       }
     });
   });
+}
+
+// ─── Visibilidad del Nav según Rol ───────────────────────────────────────────
+// Los usuarios normales solo ven la pestaña "Marcar".
+// El admin ve todas las pestañas (Dashboard, Miembros, Historial).
+function applyNavVisibility(isAdmin) {
+  const adminOnlyTabs = ['dashboard', 'admin-members', 'historial'];
+  adminOnlyTabs.forEach(tabId => {
+    const btn = document.querySelector(`[data-nav="${tabId}"]`);
+    if (btn) btn.style.display = isAdmin ? '' : 'none';
+  });
+  // Ocultar también el separador "Admin" si no es admin
+  const separator = document.querySelector('.nav-separator');
+  if (separator) separator.style.display = isAdmin ? '' : 'none';
 }
 
 async function navigateTo(view) {
