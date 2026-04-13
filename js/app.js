@@ -329,8 +329,8 @@ function setupHistorialEvents(container) {
 
   async function applyFilter() {
     const date = container.querySelector('#filter-date').value;
-    const carnet = container.querySelector('#filter-carnet').value.trim();
-    const records = await filterRecords({ date: date || undefined, carnet: carnet || undefined });
+    const search = container.querySelector('#filter-search').value.trim();
+    const records = await filterRecords({ date: date || undefined, searchTerm: search || undefined });
     const members = await getMembers();
     renderRecordsTable(records, members);
   }
@@ -338,20 +338,20 @@ function setupHistorialEvents(container) {
   filterBtn?.addEventListener('click', applyFilter);
   clearBtn?.addEventListener('click', async () => {
     container.querySelector('#filter-date').value = '';
-    container.querySelector('#filter-carnet').value = '';
+    container.querySelector('#filter-search').value = '';
     const records = await filterRecords();
     const members = await getMembers();
     renderRecordsTable(records, members);
   });
 
-  container.querySelector('#filter-carnet')?.addEventListener('keydown', e => {
+  container.querySelector('#filter-search')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') applyFilter();
   });
 
   exportBtn?.addEventListener('click', async () => {
     const date = container.querySelector('#filter-date').value;
-    const carnet = container.querySelector('#filter-carnet').value.trim();
-    const records = await filterRecords({ date: date || undefined, carnet: carnet || undefined });
+    const search = container.querySelector('#filter-search').value.trim();
+    const records = await filterRecords({ date: date || undefined, searchTerm: search || undefined });
     if (records.length === 0) {
       alert('No hay registros para exportar.');
       return;

@@ -310,8 +310,8 @@ export async function renderHistorial(container) {
           <input type="date" id="filter-date" class="input-field" value="${today}">
         </div>
         <div class="input-group input-group--inline">
-          <label class="input-label">Buscar por Carnet</label>
-          <input type="text" id="filter-carnet" class="input-field" placeholder="Buscar...">
+          <label class="input-label">Buscar Nombre o Carnet</label>
+          <input type="text" id="filter-search" class="input-field" placeholder="Buscar...">
         </div>
         <button class="btn btn--ghost" id="filter-btn">🔍 Filtrar</button>
         <button class="btn btn--ghost" id="clear-filter-btn">✕ Limpiar</button>

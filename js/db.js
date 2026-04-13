@@ -87,7 +87,7 @@ export async function deleteRecord(id) {
 /**
  * Filtra registros para la tabla.
  */
-export async function filterRecords({ date, carnet } = {}) {
+export async function filterRecords({ date, searchTerm } = {}) {
   let recordsRef = collection(db, "records");
   
   // Como Firestore requiere índices compuestos, filtraremos la fecha y ordenamiento de forma híbrida.
@@ -95,11 +95,19 @@ export async function filterRecords({ date, carnet } = {}) {
   const snap = await getDocs(query(recordsRef, orderBy("timestamp", "desc"), limit(500)));
   let records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+  const members = await getMembers();
+
   if (date) {
     records = records.filter(r => r.timestamp.startsWith(date));
   }
-  if (carnet) {
-    records = records.filter(r => r.carnet.toLowerCase().includes(carnet.toLowerCase()));
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    records = records.filter(r => {
+      const m = members.find(mb => mb.carnet === r.carnet);
+      const nameMatch = m && m.name.toLowerCase().includes(term);
+      const carnetMatch = r.carnet.toLowerCase().includes(term);
+      return nameMatch || carnetMatch;
+    });
   }
   return records;
 }
