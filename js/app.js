@@ -35,10 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInfo = document.getElementById('user-info');
     if (user) {
       overlay.classList.add('hidden');
-      // Sanitizar email y photoURL al inyectar en HTML
+      // Sanitizar email y photoURL al inyectar en HTML.
+      // Solo permitimos fotos de Google (googleusercontent.com) para evitar URLs maliciosas.
       const safeEmail = esc(user.email);
-      const safePhoto = esc(user.photoURL);
-      if (userInfo) userInfo.innerHTML = `<img src="${safePhoto}" class="avatar-small" referrerpolicy="no-referrer"/> ${safeEmail} <button id="logout-btn" class="btn-icon">🚪</button>`;
+      const isGooglePhoto = user.photoURL && /^https:\/\/lh\d*\.googleusercontent\.com\//.test(user.photoURL);
+      const avatarHtml = isGooglePhoto
+        ? `<img src="${esc(user.photoURL)}" class="avatar-small" referrerpolicy="no-referrer"/>`
+        : `<span class="avatar-small avatar-small--text">${esc((user.email || '?').charAt(0).toUpperCase())}</span>`;
+      if (userInfo) userInfo.innerHTML = `${avatarHtml} ${safeEmail} <button id="logout-btn" class="btn-icon">🚪</button>`;
       document.getElementById('logout-btn')?.addEventListener('click', logout);
       
       // Primera vez, o si no hemos cargado nada

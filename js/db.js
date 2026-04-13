@@ -112,13 +112,25 @@ export async function deleteRecord(id) {
 
 /**
  * Filtra registros para la tabla.
+ * Si el usuario es admin, devuelve todos. Si es usuario normal, solo los suyos.
+ * Esto hace que la query sea compatible con las Firestore Rules.
  */
 export async function filterRecords({ date, searchTerm } = {}) {
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const admin = await isCurrentUserAdmin();
   let recordsRef = collection(db, "records");
-  
-  // Como Firestore requiere índices compuestos, filtraremos la fecha y ordenamiento de forma híbrida.
-  // Es más seguro extraer los registros recientes y filtrarlos localmente si no configuramos índices.
-  const snap = await getDocs(query(recordsRef, orderBy("timestamp", "desc"), limit(500)));
+
+  // Si no es admin, filtramos por uid en Firestore (necesario por las Rules)
+  let q;
+  if (admin) {
+    q = query(recordsRef, orderBy("timestamp", "desc"), limit(500));
+  } else {
+    q = query(recordsRef, where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(500));
+  }
+
+  const snap = await getDocs(q);
   let records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   const members = await getMembers();
@@ -177,9 +189,21 @@ export async function exportToCSV(records) {
 
 /**
  * Retorna array de personas actualmente DENTRO del local.
+ * Solo admins ven a todos. Usuarios normales solo se ven a sí mismos.
  */
 export async function getCurrentlyInside() {
-  const snap = await getDocs(query(collection(db, "records"), orderBy("timestamp", "desc"), limit(200)));
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const admin = await isCurrentUserAdmin();
+  let q;
+  if (admin) {
+    q = query(collection(db, "records"), orderBy("timestamp", "desc"), limit(200));
+  } else {
+    q = query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(200));
+  }
+
+  const snap = await getDocs(q);
   const records = snap.docs.map(d => d.data());
   const members = await getMembers();
   
@@ -203,17 +227,39 @@ export async function getCurrentlyInside() {
   return inside;
 }
 
+/**
+ * Últimos N registros para el dashboard.
+ * Solo admins ven todos; usuarios normales solo ven los suyos.
+ */
 export async function getRecords(lim = 5) {
-  const q = query(collection(db, "records"), orderBy("timestamp", "desc"), limit(lim));
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const admin = await isCurrentUserAdmin();
+  let q;
+  if (admin) {
+    q = query(collection(db, "records"), orderBy("timestamp", "desc"), limit(lim));
+  } else {
+    q = query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(lim));
+  }
+
   const snap = await getDocs(q);
   return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
  * Detecta si la próxima acción es entrada o salida.
+ * Filtra por carnet Y uid del usuario actual para respetar las Rules.
  */
 export async function getNextAction(carnet) {
-  const q = query(collection(db, "records"), where("carnet", "==", carnet));
+  const user = auth.currentUser;
+  if (!user) return 'entrada';
+
+  const q = query(
+    collection(db, "records"),
+    where("carnet", "==", carnet),
+    where("uid", "==", user.uid)
+  );
   const snap = await getDocs(q);
   const records = snap.docs.map(doc => doc.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
   const lastRecord = records[0];
