@@ -3,7 +3,7 @@
  */
 import {
   getMembers, getCurrentlyInside, filterRecords,
-  exportToCSV, getRecords,
+  exportToCSV, getRecords, getDashboardMetrics
 } from './db.js';
 
 // ─── Sanitización XSS ────────────────────────────────────────────────────────
@@ -51,40 +51,46 @@ function badge(action) {
 
 export async function renderDashboard(container) {
   container.innerHTML = `<div class="dash-loading"><span class="clock-time">Cargando...</span></div>`;
-  const inside = await getCurrentlyInside();
-  const records = await getRecords(5);
-  const members = await getMembers();
-
-  // Hoy
-  const today = new Date().toISOString().slice(0, 10);
-  let recordsHoy = 0;
-  try {
-     const filt = await filterRecords({ date: today });
-     recordsHoy = filt.length;
-  } catch(e) {}
+  
+  const [inside, records, members, metrics] = await Promise.all([
+    getCurrentlyInside(),
+    getRecords(5),
+    getMembers(),
+    getDashboardMetrics()
+  ]);
 
   container.innerHTML = `
     <div class="dashboard">
-      <div class="dash-stats">
-        <div class="stat-card stat-card--primary">
-          <div class="stat-card__icon">👥</div>
+      <div class="dash-stats grid-4">
+        <div class="stat-card stat-card--primary stat-card--glow">
+          <div class="stat-card__icon" style="background: rgba(255,255,255,0.2);">👥</div>
           <div class="stat-card__value">${inside.length}</div>
           <div class="stat-card__label">Personas dentro ahora</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon">📋</div>
-          <div class="stat-card__value">${members.length}</div>
-          <div class="stat-card__label">Miembros registrados</div>
+          <div class="stat-card__icon" style="color: var(--accent);">📅</div>
+          <div class="stat-card__value">${metrics.today}</div>
+          <div class="stat-card__label">Visitas hoy</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon">📅</div>
-          <div class="stat-card__value">${recordsHoy}</div>
-          <div class="stat-card__label">Visitas hoy</div>
+          <div class="stat-card__icon" style="color: var(--accent);">📈</div>
+          <div class="stat-card__value">${metrics.month}</div>
+          <div class="stat-card__label">Visitas este mes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="color: var(--accent);">⚡</div>
+          <div class="stat-card__value" style="font-size: 1.5rem;">${metrics.peakHour}</div>
+          <div class="stat-card__label">Hora Pico</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="color: var(--accent);">🏆</div>
+          <div class="stat-card__value">${metrics.activeUsers} <span style="font-size: 1rem; color: var(--text-dim);">/ ${members.length}</span></div>
+          <div class="stat-card__label">Miembros activos</div>
         </div>
       </div>
 
       <div class="dash-panels">
-        <div class="glass-panel">
+        <div class="glass-panel panel-premium">
           <h3 class="panel-title">
             <span class="dot dot--green"></span> Actualmente en el local
           </h3>
@@ -108,7 +114,7 @@ export async function renderDashboard(container) {
           }
         </div>
 
-        <div class="glass-panel">
+        <div class="glass-panel panel-premium">
           <h3 class="panel-title">⚡ Últimos movimientos</h3>
           ${records.length === 0
             ? `<div class="empty-state"><span class="empty-icon">📭</span><p>Sin registros aún</p></div>`

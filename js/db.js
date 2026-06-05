@@ -240,6 +240,58 @@ export async function getRecords(lim = 5) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+/** Métricas avanzadas para el dashboard */
+export async function getDashboardMetrics() {
+  const user = auth.currentUser;
+  if (!user) return { today: 0, month: 0, peakHour: '—', activeUsers: 0 };
+  const admin = await isCurrentUserAdmin();
+  
+  const q = admin
+    ? query(collection(db, "records"), orderBy("timestamp", "desc"), limit(500))
+    : query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(500));
+    
+  const snap = await getDocs(q);
+  const records = snap.docs.map(d => d.data());
+  
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const thisMonthStr = todayStr.slice(0, 7);
+  
+  let visitsToday = 0;
+  let visitsMonth = 0;
+  const hourCounts = {};
+  const activeMembers = new Set();
+  
+  records.forEach(r => {
+    if (r.action !== 'entrada') return;
+    const rDate = r.timestamp.slice(0, 10);
+    const rMonth = r.timestamp.slice(0, 7);
+    const rHour = new Date(r.timestamp).getHours();
+    
+    if (rDate === todayStr) visitsToday++;
+    if (rMonth === thisMonthStr) {
+      visitsMonth++;
+      activeMembers.add(r.carnet);
+      hourCounts[rHour] = (hourCounts[rHour] || 0) + 1;
+    }
+  });
+  
+  let peakHour = '—';
+  if (Object.keys(hourCounts).length > 0) {
+    const peak = Object.entries(hourCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    const ph = parseInt(peak, 10);
+    const suffix = ph >= 12 ? 'PM' : 'AM';
+    const hour12 = ph % 12 || 12;
+    peakHour = `${hour12}:00 ${suffix}`;
+  }
+  
+  return {
+    today: visitsToday,
+    month: visitsMonth,
+    activeUsers: activeMembers.size,
+    peakHour
+  };
+}
+
 /** Detecta la próxima acción (entrada/salida) para un carnet. */
 export async function getNextAction(carnet) {
   const user = auth.currentUser;
