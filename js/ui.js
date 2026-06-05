@@ -189,7 +189,7 @@ export async function renderDashboard(container) {
 
     const ctxHours = document.getElementById('chart-hours')?.getContext('2d');
     if (ctxHours) {
-      const hLabels = metrics.chartHours.data.map((_, i) => \`\${i}:00\`);
+      const hLabels = metrics.chartHours.data.map((_, i) => `${i}:00`);
       new Chart(ctxHours, {
         type: 'bar',
         data: {
