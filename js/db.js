@@ -4,7 +4,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { 
   getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
+  deleteUser
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -66,7 +67,7 @@ export async function registerWithEmail(name, carnet, email, password) {
     });
   } catch (err) {
     // Si falla la base de datos, revertimos la creación de la cuenta
-    await user.delete().catch(() => {});
+    await deleteUser(user).catch(() => {});
     throw new Error('Error de permisos o conexión. Intenta de nuevo. (' + err.message + ')');
   }
 
