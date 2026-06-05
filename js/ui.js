@@ -136,45 +136,69 @@ export async function renderDashboard(container) {
 
 // ─── Vista Marcación ──────────────────────────────────────────────────────────
 
-export function renderMarcar(container) {
+/**
+ * renderMarcar — Vista de marcación con un solo clic.
+ * @param {HTMLElement} container
+ * @param {object|null} member   - Datos del miembro vinculado al usuario logueado (null si no tiene perfil)
+ * @param {'entrada'|'salida'} nextAction
+ */
+export function renderMarcar(container, member = null, nextAction = 'entrada') {
+  if (!member) {
+    container.innerHTML = `
+      <div class="marcar-view">
+        <div class="marcar-card glass-panel">
+          <img src="assets/logo.jpg" alt="AESIA Logo" class="marcar-logo">
+          <h2 class="marcar-title">¡Bienvenid@!</h2>
+          <p class="marcar-subtitle" style="color:var(--amber);">
+            ⚠️ Tu cuenta no está vinculada a un perfil de miembro.<br/>
+            Contacta al administrador de AESIA o regresa al inicio de sesión<br/>
+            y <strong>regístrate con tu carnet</strong>.
+          </p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const isEntrada    = nextAction === 'entrada';
+  const firstName    = esc(member.name.split(' ')[0]);
+  const initial      = esc(member.name.charAt(0).toUpperCase());
+
   container.innerHTML = `
     <div class="marcar-view">
       <div class="marcar-card glass-panel">
         <img src="assets/logo.jpg" alt="AESIA Logo" class="marcar-logo">
-        <h2 class="marcar-title">Sistema de Marcación</h2>
-        <p class="marcar-subtitle">Ingresa tu carnet para registrar asistencia</p>
 
-        <form id="marcar-form" class="marcar-form" autocomplete="off">
-          <div class="input-group">
-            <label class="input-label" for="carnet-input">Número de Carnet</label>
-            <div class="input-wrapper">
-              <span class="input-icon">🪪</span>
-              <input
-                id="carnet-input"
-                type="text"
-                class="input-field"
-                placeholder="Ej: AB12345"
-                maxlength="20"
-                required
-                autofocus
-              />
-            </div>
+        <div class="marcar-user-info">
+          <div class="marcar-avatar">${initial}</div>
+          <div class="marcar-user-details">
+            <h2 class="marcar-name">¡Hola, ${firstName}!</h2>
+            <p class="marcar-carnet">🆔 ${esc(member.carnet)}</p>
+            ${member.career ? `<p class="marcar-career">${esc(member.career)}</p>` : ''}
           </div>
-          <button type="submit" class="btn btn--primary btn--lg" id="marcar-btn" style="width: 100%; border-radius: 99px;">
-            <span class="btn-text">Registrar con GPS 📍</span>
-          </button>
-        </form>
+        </div>
+
+        <div class="marcar-status ${isEntrada ? 'marcar-status--out' : 'marcar-status--in'}">
+          <span class="marcar-status__dot"></span>
+          ${isEntrada ? 'Actualmente fuera del local' : 'Actualmente dentro del local'}
+        </div>
+
+        <button type="button" class="btn btn--primary btn--xl" id="marcar-btn" style="width:100%;border-radius:99px;">
+          <span class="btn-text">${isEntrada ? '✅ Registrar Entrada' : '🚪 Registrar Salida'}</span>
+        </button>
+
+        <p class="marcar-gps-note">📍 Se verificará tu ubicación GPS al marcar</p>
 
         <div id="marcar-result" class="marcar-result hidden"></div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
+
 export function showMarcarResult(container, record, member, action) {
-  const result = container.querySelector('#marcar-result');
+  const result    = container.querySelector('#marcar-result');
+  if (!result) return;
   const isEntrada = action === 'entrada';
-  const { time } = formatDateTime(record.timestamp);
+  const { time }  = formatDateTime(record.timestamp);
 
   result.className = `marcar-result marcar-result--${isEntrada ? 'entrada' : 'salida'} animate-in`;
   result.innerHTML = `
@@ -182,18 +206,14 @@ export function showMarcarResult(container, record, member, action) {
     <div class="result-title">${isEntrada ? '¡Bienvenid@!' : '¡Hasta pronto!'}</div>
     <div class="result-name">${esc(member ? member.name : record.carnet)}</div>
     <div class="result-detail">
-      ${isEntrada ? 'Entrada' : 'Salida'} registr. a las <strong>${time}</strong>
+      ${isEntrada ? 'Entrada' : 'Salida'} registrada a las <strong>${time}</strong>
       ${record.outOfBounds ? '<br/><span style="color:var(--amber);">⚠️ Registrado fuera del rango</span>' : ''}
     </div>
   `;
 
   setTimeout(() => {
     result.classList.add('fade-out');
-    setTimeout(() => {
-      result.className = 'marcar-result hidden';
-      container.querySelector('#carnet-input').value = '';
-      container.querySelector('#carnet-input').focus();
-    }, 600);
+    setTimeout(() => { result.className = 'marcar-result hidden'; }, 600);
   }, 4000);
 }
 

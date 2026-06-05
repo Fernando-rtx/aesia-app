@@ -804,13 +804,13 @@ body::before {
 
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 20px;
-  padding: 40px;
+  gap: 16px;
+  padding: 36px 40px;
 }
 
 .login-logo {
@@ -821,7 +821,86 @@ body::before {
 }
 
 .login-card h2 { font-size: 1.8rem; font-weight: 800; }
-.login-card p { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 10px; }
+.login-card p  { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 4px; }
+
+/* Botón Google */
+.btn--google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 99px;
+  padding: 11px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.btn--google:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.18); }
+
+/* Separador "o" */
+.login-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--glass-border);
+}
+
+/* Formulario email/pass */
+.email-auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Alerta inline */
+.login-alert {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  animation: fadeIn 0.2s ease;
+}
+.login-alert--error   { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.login-alert--success { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+
+/* Acciones secundarias (links) */
+.login-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 2px 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.2s;
+}
+.btn-link:hover { opacity: 0.75; }
+
 
 .topbar-user {
   position: absolute;
@@ -858,6 +937,87 @@ body::before {
   vertical-align: middle;
 }
 .dash-loading { display: flex; justify-content: center; align-items: center; min-height: 200px; opacity: 0.5; }
+
+/* ─── Login Form (Email / Password) ─────────────────────────────────────── */
+.email-auth-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+.input-group { width: 100%; }
+.input-wrapper {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 0 14px;
+  transition: border-color 0.2s;
+}
+.input-wrapper:focus-within { border-color: var(--accent); }
+.input-icon { font-size: 1rem; opacity: 0.6; }
+.input-field {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text-primary); padding: 13px 0; font-size: 0.95rem;
+  font-family: var(--font-main);
+}
+.input-field::placeholder { color: var(--text-muted); }
+
+.login-submit-btn { width: 100%; margin-top: 4px; border-radius: 12px; }
+
+.login-alert {
+  width: 100%; padding: 10px 14px; border-radius: 10px;
+  font-size: 0.875rem; font-weight: 500; text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+.login-alert--error   { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.login-alert--success { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+
+.login-secondary {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 100%; margin-top: 8px;
+}
+.btn-link {
+  background: none; border: none; cursor: pointer;
+  color: var(--accent); font-size: 0.85rem; padding: 4px 8px;
+  text-decoration: underline; text-underline-offset: 2px;
+  font-family: var(--font-main); transition: opacity 0.2s;
+}
+.btn-link:hover { opacity: 0.75; }
+
+/* ─── Nueva Vista de Marcación (un solo clic) ────────────────────────────── */
+.marcar-user-info {
+  display: flex; align-items: center; gap: 16px;
+  background: rgba(255,255,255,0.05); border-radius: 16px;
+  padding: 16px 20px; width: 100%; margin: 8px 0;
+}
+.marcar-user-details { text-align: left; }
+.marcar-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 1.5rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.marcar-name   { font-size: 1.2rem; font-weight: 700; margin: 0; }
+.marcar-carnet { font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0; }
+.marcar-career { font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0; }
+
+.marcar-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 99px;
+  font-size: 0.85rem; font-weight: 500; margin: 4px 0;
+}
+.marcar-status--out { background: rgba(239,68,68,0.12); color: #fca5a5; }
+.marcar-status--in  { background: rgba(34,197,94,0.12); color: #86efac; }
+.marcar-status__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+.marcar-status--out .marcar-status__dot { background: #ef4444; }
+.marcar-status--in  .marcar-status__dot { background: #22c55e; }
+
+.btn--xl { padding: 16px 28px; font-size: 1.1rem; }
+
+.marcar-gps-note {
+  font-size: 0.78rem; color: var(--text-muted);
+  margin-top: 4px; margin-bottom: 0;
+}
 
 /* ─── Utilidades ────────────────────────────────────────────────────── */
 .hidden { display: none !important; }

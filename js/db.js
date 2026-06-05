@@ -1,9 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, limit, getDoc, setDoc, updateDoc
+  getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, limit, getDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { 
-  getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+  getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -15,13 +16,12 @@ const firebaseConfig = {
   appId: "1:1048380763745:web:585d93a0c428830dcdc420"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const db  = getFirestore(app);
 export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// ─── Autenticación ─────────────────────────────────────────────────────────────
+// ─── Autenticación Google ─────────────────────────────────────────────────────
 export function loginWithGoogle() {
   return signInWithPopup(auth, provider);
 }
@@ -34,33 +34,67 @@ export function onAuthChange(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
+// ─── Autenticación Email / Contraseña ─────────────────────────────────────────
+/**
+ * Registra una cuenta nueva y crea automáticamente su perfil de miembro.
+ * El carnet es el ID del documento en Firestore (clave natural de la UES).
+ */
+export async function registerWithEmail(name, carnet, email, password) {
+  const cleanCarnet = carnet.trim().toUpperCase();
+
+  // 1. Verificar que el carnet no esté ya en uso
+  const existing = await getDoc(doc(db, "members", cleanCarnet));
+  if (existing.exists()) {
+    throw new Error('Este carnet ya está registrado. Si ya tienes cuenta, inicia sesión.');
+  }
+
+  // 2. Crear cuenta en Firebase Auth
+  const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  const user = userCredential.user;
+
+  // 3. Crear documento de miembro vinculado al uid
+  await setDoc(doc(db, "members", cleanCarnet), {
+    name:      name.trim(),
+    carnet:    cleanCarnet,
+    email:     email.trim().toLowerCase(),
+    uid:       user.uid,
+    career:    '',
+    cycle:     '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  return userCredential;
+}
+
+/** Inicia sesión con email y contraseña. */
+export function loginWithEmail(email, password) {
+  return signInWithEmailAndPassword(auth, email.trim(), password);
+}
+
+/** Envía correo de recuperación de contraseña. */
+export function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email.trim());
+}
+
 // ─── Sistema de Roles Admin ───────────────────────────────────────────────────
-// El rol de admin se almacena en la colección "admins" de Firestore.
-// Solo se puede escribir a esa colección vía Admin SDK (script local),
-// nunca desde el navegador (bloqueado por Firestore Rules).
 let _adminCacheChecked = false;
 let _isAdmin = false;
 
 export async function isCurrentUserAdmin() {
   const user = auth.currentUser;
   if (!user) return false;
-
-  // Cachear para no hacer lecturas repetidas a Firestore
   if (_adminCacheChecked) return _isAdmin;
-
   try {
-    const docRef = doc(db, "admins", user.uid);
-    const snap = await getDoc(docRef);
+    const snap = await getDoc(doc(db, "admins", user.uid));
     _isAdmin = snap.exists();
   } catch (e) {
-    console.warn("Error verificando rol admin:", e);
     _isAdmin = false;
   }
   _adminCacheChecked = true;
   return _isAdmin;
 }
 
-// Resetear caché al cambiar usuario
 onAuthStateChanged(auth, () => {
   _adminCacheChecked = false;
   _isAdmin = false;
@@ -68,18 +102,13 @@ onAuthStateChanged(auth, () => {
 
 // ─── Miembros ─────────────────────────────────────────────────────────────────
 export async function getMembers() {
-  const q = query(collection(db, "members"));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const snap = await getDocs(collection(db, "members"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 export async function saveMember(member) {
   const docRef = doc(db, "members", member.carnet);
-  // Guardamos usando el carnet como ID de documento en Firestore
-  await setDoc(docRef, {
-    ...member,
-    updatedAt: new Date().toISOString()
-  });
+  await setDoc(docRef, { ...member, updatedAt: new Date().toISOString() });
   return member;
 }
 
@@ -88,20 +117,29 @@ export async function deleteMember(carnet) {
 }
 
 export async function getMemberByCarnet(carnet) {
-  const docRef = doc(db, "members", carnet);
-  const snap = await getDoc(docRef);
-  if (snap.exists()) {
-    return { id: snap.id, ...snap.data() };
-  }
-  return null;
+  const snap = await getDoc(doc(db, "members", carnet));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+/**
+ * Busca el miembro vinculado al uid del usuario logueado.
+ * Usado en el flujo de marcación automática (un solo clic).
+ */
+export async function getMemberByUid(uid) {
+  if (!uid) return null;
+  const q = query(collection(db, "members"), where("uid", "==", uid));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() };
 }
 
 // ─── Registros de Marcación ───────────────────────────────────────────────────
 export async function saveRecord(record) {
   const user = auth.currentUser;
   record.timestamp = new Date().toISOString();
-  record.userEmail = user ? user.email : 'anónimo';
-  record.uid = user ? user.uid : null; // Asociar con UID del usuario autenticado
+  record.userEmail  = user ? user.email : 'anónimo';
+  record.uid        = user ? user.uid   : null;
   const docRef = await addDoc(collection(db, "records"), record);
   return { id: docRef.id, ...record };
 }
@@ -111,159 +149,99 @@ export async function deleteRecord(id) {
 }
 
 /**
- * Filtra registros para la tabla.
- * Si el usuario es admin, devuelve todos. Si es usuario normal, solo los suyos.
- * Esto hace que la query sea compatible con las Firestore Rules.
+ * Filtra registros. Si es admin, trae todos; si no, solo los propios.
  */
 export async function filterRecords({ date, searchTerm } = {}) {
   const user = auth.currentUser;
   if (!user) return [];
-
   const admin = await isCurrentUserAdmin();
-  let recordsRef = collection(db, "records");
-
-  // Si no es admin, filtramos por uid en Firestore (necesario por las Rules)
-  let q;
-  if (admin) {
-    q = query(recordsRef, orderBy("timestamp", "desc"), limit(500));
-  } else {
-    q = query(recordsRef, where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(500));
-  }
-
+  const ref = collection(db, "records");
+  const q = admin
+    ? query(ref, orderBy("timestamp", "desc"), limit(500))
+    : query(ref, where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(500));
   const snap = await getDocs(q);
-  let records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+  let records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const members = await getMembers();
-
-  if (date) {
-    records = records.filter(r => r.timestamp.startsWith(date));
-  }
+  if (date)       records = records.filter(r => r.timestamp.startsWith(date));
   if (searchTerm) {
     const term = searchTerm.toLowerCase();
     records = records.filter(r => {
       const m = members.find(mb => mb.carnet === r.carnet);
-      const nameMatch = m && m.name.toLowerCase().includes(term);
-      const carnetMatch = r.carnet.toLowerCase().includes(term);
-      return nameMatch || carnetMatch;
+      return (m && m.name.toLowerCase().includes(term)) || r.carnet.toLowerCase().includes(term);
     });
   }
   return records;
 }
 
-/**
- * Exportar registros como CSV
- */
+/** Exportar registros como CSV */
 export async function exportToCSV(records) {
   const members = await getMembers();
-  const header = ['ID', 'Carnet', 'Nombre', 'Carrera', 'Acción', 'Fecha', 'Hora', 'Fuera de Rango'];
-  const rows = records.map(r => {
-    const member = members.find(m => m.carnet === r.carnet);
-    const dt = new Date(r.timestamp);
-    const fecha = dt.toLocaleDateString('es-SV');
-    const hora = dt.toLocaleTimeString('es-SV');
+  const header  = ['ID', 'Carnet', 'Nombre', 'Carrera', 'Acción', 'Fecha', 'Hora', 'Fuera de Rango'];
+  const rows    = records.map(r => {
+    const m    = members.find(mb => mb.carnet === r.carnet);
+    const dt   = new Date(r.timestamp);
     return [
       r.id,
       r.carnet,
-      member ? member.name : 'Desconocido',
-      member ? member.career : '—',
+      m ? m.name    : 'Desconocido',
+      m ? m.career  : '—',
       r.action.toUpperCase(),
-      fecha,
-      hora,
-      r.outOfBounds ? 'SÍ' : 'NO'
+      dt.toLocaleDateString('es-SV'),
+      dt.toLocaleTimeString('es-SV'),
+      r.outOfBounds ? 'SÍ' : 'NO',
     ];
   });
-
-  const csvContent = [header, ...rows]
-    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n');
-
-  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const today = new Date().toISOString().slice(0, 10);
-  a.download = `AESIA_Marcaciones_${today}.csv`;
+  const csv  = [header, ...rows].map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `AESIA_${new Date().toISOString().slice(0,10)}.csv` });
   a.click();
   URL.revokeObjectURL(url);
 }
 
-/**
- * Retorna array de personas actualmente DENTRO del local.
- * Solo admins ven a todos. Usuarios normales solo se ven a sí mismos.
- */
+/** Personas actualmente dentro del local. */
 export async function getCurrentlyInside() {
   const user = auth.currentUser;
   if (!user) return [];
-
   const admin = await isCurrentUserAdmin();
-  let q;
-  if (admin) {
-    q = query(collection(db, "records"), orderBy("timestamp", "desc"), limit(200));
-  } else {
-    q = query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(200));
-  }
-
-  const snap = await getDocs(q);
+  const q = admin
+    ? query(collection(db, "records"), orderBy("timestamp", "desc"), limit(200))
+    : query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(200));
+  const snap    = await getDocs(q);
   const records = snap.docs.map(d => d.data());
   const members = await getMembers();
-  
-  const seen = new Set();
-  const inside = [];
-
+  const seen    = new Set();
+  const inside  = [];
   for (const r of records) {
     if (!seen.has(r.carnet)) {
       seen.add(r.carnet);
       if (r.action === 'entrada') {
-        const member = members.find(m => m.carnet === r.carnet);
-        inside.push({
-          carnet: r.carnet,
-          name: member ? member.name : r.carnet,
-          career: member ? member.career : '—',
-          since: r.timestamp,
-        });
+        const m = members.find(mb => mb.carnet === r.carnet);
+        inside.push({ carnet: r.carnet, name: m ? m.name : r.carnet, career: m ? m.career : '—', since: r.timestamp });
       }
     }
   }
   return inside;
 }
 
-/**
- * Últimos N registros para el dashboard.
- * Solo admins ven todos; usuarios normales solo ven los suyos.
- */
+/** Últimos N registros para el dashboard. */
 export async function getRecords(lim = 5) {
   const user = auth.currentUser;
   if (!user) return [];
-
   const admin = await isCurrentUserAdmin();
-  let q;
-  if (admin) {
-    q = query(collection(db, "records"), orderBy("timestamp", "desc"), limit(lim));
-  } else {
-    q = query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(lim));
-  }
-
+  const q = admin
+    ? query(collection(db, "records"), orderBy("timestamp", "desc"), limit(lim))
+    : query(collection(db, "records"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(lim));
   const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-/**
- * Detecta si la próxima acción es entrada o salida.
- * Filtra por carnet Y uid del usuario actual para respetar las Rules.
- */
+/** Detecta la próxima acción (entrada/salida) para un carnet. */
 export async function getNextAction(carnet) {
   const user = auth.currentUser;
   if (!user) return 'entrada';
-
-  const q = query(
-    collection(db, "records"),
-    where("carnet", "==", carnet),
-    where("uid", "==", user.uid)
-  );
+  const q    = query(collection(db, "records"), where("carnet", "==", carnet), where("uid", "==", user.uid));
   const snap = await getDocs(q);
-  const records = snap.docs.map(doc => doc.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-  const lastRecord = records[0];
-  
-  if (!lastRecord || lastRecord.action === 'salida') return 'entrada';
-  return 'salida';
+  const last = snap.docs.map(d => d.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+  return (!last || last.action === 'salida') ? 'entrada' : 'salida';
 }

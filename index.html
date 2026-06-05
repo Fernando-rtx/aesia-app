@@ -64,17 +64,74 @@
   <div class="login-overlay" id="login-overlay">
     <div class="login-card glass-panel">
       <img src="assets/logo.jpg" alt="AESIA" class="login-logo"/>
-      <h2>AESIA Marcación</h2>
-      <p>Debes iniciar sesión con tu correo para marcar asistencia desde tu celular.</p>
-      <button class="btn btn--primary" id="google-login-btn">
-        <span>G</span> Iniciar Sesión con Google
-      </button>
+      <h2 id="login-title">AESIA Marcación</h2>
+      <p id="login-subtitle">Inicia sesión para registrar tu asistencia.</p>
+
+      <!-- Alerta inline (errores / éxito) -->
+      <div id="login-alert" class="login-alert hidden"></div>
+
+      <!-- ── Formulario principal ── -->
+      <form id="email-auth-form" class="email-auth-form" novalidate autocomplete="off">
+
+        <!-- Nombre (solo en modo registro) -->
+        <div class="input-group hidden" id="field-name">
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="auth-name" class="input-field"
+              placeholder="Nombre completo" autocomplete="name"/>
+          </div>
+        </div>
+
+        <!-- Carnet (solo en modo registro) -->
+        <div class="input-group hidden" id="field-carnet">
+          <div class="input-wrapper">
+            <span class="input-icon">🪪</span>
+            <input type="text" id="auth-carnet" class="input-field"
+              placeholder="Carnet (ej: GP24006)" autocomplete="off" style="text-transform:uppercase"/>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="input-group" id="field-email">
+          <div class="input-wrapper">
+            <span class="input-icon">📧</span>
+            <input type="email" id="auth-email" class="input-field"
+              placeholder="Correo electrónico" autocomplete="email"/>
+          </div>
+        </div>
+
+        <!-- Contraseña -->
+        <div class="input-group" id="field-pass">
+          <div class="input-wrapper">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="auth-pass" class="input-field"
+              placeholder="Contraseña" autocomplete="current-password"/>
+          </div>
+        </div>
+
+        <!-- Confirmar contraseña (solo en modo registro) -->
+        <div class="input-group hidden" id="field-pass2">
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="auth-pass2" class="input-field"
+              placeholder="Confirmar contraseña" autocomplete="new-password"/>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary login-submit-btn" id="email-auth-btn">
+          Iniciar Sesión
+        </button>
+      </form>
+
+      <!-- ── Acciones secundarias ── -->
+      <div class="login-secondary">
+        <button class="btn-link" id="toggle-register-btn">¿No tienes cuenta? Regístrate</button>
+        <button class="btn-link" id="forgot-pass-btn" style="display:none">¿Olvidaste tu contraseña?</button>
+      </div>
+
     </div>
   </div>
 
-  <!-- Admin: verificación automática por rol en Firestore (sin modal de contraseña) -->
-
-  <!-- ░░ OVERLAY de fondo para modales ░░ -->
   <script type="module" src="js/ui.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
