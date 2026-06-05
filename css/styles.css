@@ -943,6 +943,7 @@ body::before {
 
 .input-group { width: 100%; }
 .input-wrapper {
+  position: relative; /* Para aislar si hay conflicto */
   display: flex; align-items: center; gap: 10px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
@@ -950,13 +951,13 @@ body::before {
   transition: border-color 0.2s;
 }
 .input-wrapper:focus-within { border-color: var(--accent); }
-.input-icon { font-size: 1rem; opacity: 0.6; }
-.input-field {
+.email-auth-form .input-icon { position: static; font-size: 1rem; opacity: 0.6; }
+.email-auth-form .input-field {
   flex: 1; background: transparent; border: none; outline: none;
   color: var(--text-primary); padding: 13px 0; font-size: 0.95rem;
   font-family: var(--font-main);
 }
-.input-field::placeholder { color: var(--text-muted); }
+.email-auth-form .input-field::placeholder { color: var(--text-muted); }
 
 .login-submit-btn { width: 100%; margin-top: 4px; border-radius: 12px; }
 
