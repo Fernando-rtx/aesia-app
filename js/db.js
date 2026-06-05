@@ -60,8 +60,6 @@ export async function registerWithEmail(name, carnet, email, password) {
       carnet:    cleanCarnet,
       email:     email.trim().toLowerCase(),
       uid:       user.uid,
-      career:    '',
-      cycle:     '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -183,7 +181,7 @@ export async function filterRecords({ date, searchTerm } = {}) {
 /** Exportar registros como CSV */
 export async function exportToCSV(records) {
   const members = await getMembers();
-  const header  = ['ID', 'Carnet', 'Nombre', 'Carrera', 'Acción', 'Fecha', 'Hora', 'Fuera de Rango'];
+  const header  = ['ID', 'Carnet', 'Nombre', 'Acción', 'Fecha', 'Hora', 'Fuera de Rango'];
   const rows    = records.map(r => {
     const m    = members.find(mb => mb.carnet === r.carnet);
     const dt   = new Date(r.timestamp);
@@ -191,7 +189,6 @@ export async function exportToCSV(records) {
       r.id,
       r.carnet,
       m ? m.name    : 'Desconocido',
-      m ? m.career  : '—',
       r.action.toUpperCase(),
       dt.toLocaleDateString('es-SV'),
       dt.toLocaleTimeString('es-SV'),
@@ -224,7 +221,7 @@ export async function getCurrentlyInside() {
       seen.add(r.carnet);
       if (r.action === 'entrada') {
         const m = members.find(mb => mb.carnet === r.carnet);
-        inside.push({ carnet: r.carnet, name: m ? m.name : r.carnet, career: m ? m.career : '—', since: r.timestamp });
+        inside.push({ carnet: r.carnet, name: m ? m.name : r.carnet, since: r.timestamp });
       }
     }
   }

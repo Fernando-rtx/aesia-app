@@ -382,9 +382,7 @@ function showMemberForm(container, member) {
     btn.disabled = true;
     const newMember = {
       name:   formContainer.querySelector('#f-name').value.trim(),
-      carnet: formContainer.querySelector('#f-carnet').value.trim().toUpperCase(),
-      career: formContainer.querySelector('#f-career').value,
-      cycle:  formContainer.querySelector('#f-cycle').value.trim(),
+      carnet: formContainer.querySelector('#f-carnet').value.trim().toUpperCase()
     };
     if (!newMember.name || !newMember.carnet) {
       alert('Nombre y carnet son obligatorios.');

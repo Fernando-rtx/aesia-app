@@ -99,7 +99,7 @@ export async function renderDashboard(container) {
                     <div class="avatar">${esc(p.name.charAt(0).toUpperCase())}</div>
                     <div class="inside-info">
                       <span class="inside-name">${esc(p.name)}</span>
-                      <span class="inside-meta">${esc(p.carnet)} · ${esc(p.career)}</span>
+                      <span class="inside-meta">${esc(p.carnet)}</span>
                     </div>
                     <span class="inside-time">${timeDiff(p.since)}</span>
                   </li>
@@ -173,7 +173,6 @@ export function renderMarcar(container, member = null, nextAction = 'entrada') {
           <div class="marcar-user-details">
             <h2 class="marcar-name">¡Hola, ${firstName}!</h2>
             <p class="marcar-carnet">🆔 ${esc(member.carnet)}</p>
-            ${member.career ? `<p class="marcar-career">${esc(member.career)}</p>` : ''}
           </div>
         </div>
 
@@ -270,7 +269,6 @@ function memberCard(m) {
       <div class="member-info">
         <div class="member-name">${esc(m.name)}</div>
         <div class="member-carnet">🪪 ${esc(m.carnet)}</div>
-        <div class="member-career">🎓 ${esc(m.career || '—')}</div>
       </div>
       <div class="member-actions">
         <button class="btn-icon btn-icon--edit" data-carnet="${esc(m.carnet)}" title="Editar">✏️</button>
@@ -297,21 +295,6 @@ export function renderMemberForm(container, member = null) {
             <input type="text" id="f-carnet" class="input-field" placeholder="AB12345"
               value="${isEdit ? esc(member.carnet) : ''}" ${isEdit ? 'readonly' : ''} required>
           </div>
-          <div class="input-group">
-            <label class="input-label">Carrera</label>
-            <select id="f-career" class="input-field select-field">
-              <option value="">Seleccionar...</option>
-              ${['Ingeniería en Sistemas', 'Ingeniería Civil', 'Ingeniería Industrial',
-                  'Arquitectura', 'Ingeniería Mecánica', 'Ingeniería Eléctrica', 'Otra']
-                .map(c => `<option value="${c}" ${isEdit && member.career === c ? 'selected' : ''}>${c}</option>`)
-                .join('')}
-            </select>
-          </div>
-          <div class="input-group">
-            <label class="input-label">Ciclo / Año</label>
-            <input type="text" id="f-cycle" class="input-field" placeholder="Ej: 5° Ciclo 2024"
-              value="${isEdit && member.cycle ? esc(member.cycle) : ''}">
-          </div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn--ghost" id="cancel-form-btn">Cancelar</button>
@@ -337,11 +320,11 @@ export async function renderHistorial(container) {
       </div>
 
       <div class="filter-bar glass-panel">
-        <div class="input-group input-group--inline">
+        <div class="input-group">
           <label class="input-label">Fecha</label>
           <input type="date" id="filter-date" class="input-field" value="${today}">
         </div>
-        <div class="input-group input-group--inline">
+        <div class="input-group">
           <label class="input-label">Buscar Nombre o Carnet</label>
           <input type="text" id="filter-search" class="input-field" placeholder="Buscar...">
         </div>
