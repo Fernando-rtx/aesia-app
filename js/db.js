@@ -284,11 +284,40 @@ export async function getDashboardMetrics() {
     peakHour = `${hour12}:00 ${suffix}`;
   }
   
+  // Calcular últimos 7 días
+  const last7Days = [];
+  const daysVisits = {};
+  for(let i=6; i>=0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dStr = d.toISOString().slice(0, 10);
+    last7Days.push(dStr);
+    daysVisits[dStr] = 0;
+  }
+  
+  // Inicializar 24 horas
+  const hours24 = Array(24).fill(0);
+  
+  records.forEach(r => {
+    if (r.action !== 'entrada') return;
+    const rDate = r.timestamp.slice(0, 10);
+    const rHour = new Date(r.timestamp).getHours();
+    
+    if (daysVisits[rDate] !== undefined) {
+      daysVisits[rDate]++;
+    }
+    hours24[rHour]++;
+  });
+  
+  const visitsLast7Days = last7Days.map(d => daysVisits[d]);
+  
   return {
     today: visitsToday,
     month: visitsMonth,
     activeUsers: activeMembers.size,
-    peakHour
+    peakHour,
+    chartVisits: { labels: last7Days, data: visitsLast7Days },
+    chartHours: { data: hours24 }
   };
 }
 

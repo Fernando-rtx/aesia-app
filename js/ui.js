@@ -91,6 +91,21 @@ export async function renderDashboard(container) {
 
       <div class="dash-panels">
         <div class="glass-panel panel-premium">
+          <h3 class="panel-title">📈 Visitas de los últimos 7 días</h3>
+          <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+            <canvas id="chart-visits"></canvas>
+          </div>
+        </div>
+        <div class="glass-panel panel-premium">
+          <h3 class="panel-title">⏰ Afluencia por hora</h3>
+          <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+            <canvas id="chart-hours"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-panels">
+        <div class="glass-panel panel-premium">
           <h3 class="panel-title">
             <span class="dot dot--green"></span> Actualmente en el local
           </h3>
@@ -138,6 +153,66 @@ export async function renderDashboard(container) {
       </div>
     </div>
   `;
+
+  // Inicializar Gráficos (si Chart está disponible globalmente)
+  if (window.Chart) {
+    const ctxVisits = document.getElementById('chart-visits')?.getContext('2d');
+    if (ctxVisits) {
+      new Chart(ctxVisits, {
+        type: 'line',
+        data: {
+          labels: metrics.chartVisits.labels.map(l => l.slice(5)), // MM-DD
+          datasets: [{
+            label: 'Visitas',
+            data: metrics.chartVisits.data,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: '#3b82f6',
+            pointBorderWidth: 2,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    const ctxHours = document.getElementById('chart-hours')?.getContext('2d');
+    if (ctxHours) {
+      const hLabels = metrics.chartHours.data.map((_, i) => \`\${i}:00\`);
+      new Chart(ctxHours, {
+        type: 'bar',
+        data: {
+          labels: hLabels,
+          datasets: [{
+            label: 'Afluencia',
+            data: metrics.chartHours.data,
+            backgroundColor: '#10b981',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+  }
 }
 
 // ─── Vista Marcación ──────────────────────────────────────────────────────────
