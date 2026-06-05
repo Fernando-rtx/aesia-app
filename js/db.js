@@ -53,16 +53,22 @@ export async function registerWithEmail(name, carnet, email, password) {
   const user = userCredential.user;
 
   // 3. Crear documento de miembro vinculado al uid
-  await setDoc(doc(db, "members", cleanCarnet), {
-    name:      name.trim(),
-    carnet:    cleanCarnet,
-    email:     email.trim().toLowerCase(),
-    uid:       user.uid,
-    career:    '',
-    cycle:     '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    await setDoc(doc(db, "members", cleanCarnet), {
+      name:      name.trim(),
+      carnet:    cleanCarnet,
+      email:     email.trim().toLowerCase(),
+      uid:       user.uid,
+      career:    '',
+      cycle:     '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    // Si falla la base de datos, revertimos la creación de la cuenta
+    await user.delete().catch(() => {});
+    throw new Error('Error de permisos o conexión. Intenta de nuevo. (' + err.message + ')');
+  }
 
   return userCredential;
 }

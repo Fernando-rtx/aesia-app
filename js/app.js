@@ -59,14 +59,20 @@ function hideLoginAlert() {
 document.addEventListener('DOMContentLoaded', () => {
   setupClock();
 
+  // ── Toggle Login / Registro ──
+  let isRegisterMode = false;
+  let isRegistering = false; // flag para evitar cierre prematuro
+
   // ── Estado de sesión ──
   onAuthChange(async (user) => {
     const overlay  = document.getElementById('login-overlay');
     const userInfo = document.getElementById('user-info');
 
     if (user) {
-      overlay.classList.add('hidden');
-      hideLoginAlert();
+      if (!isRegistering) {
+        overlay.classList.add('hidden');
+        hideLoginAlert();
+      }
 
       // Mostrar avatar y email
       const safeEmail    = esc(user.email || '');
@@ -92,9 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('main-content').innerHTML = '';
     }
   });
-
-  // ── Toggle Login / Registro ──
-  let isRegisterMode = false;
 
   function setMode(register) {
     isRegisterMode = register;
@@ -126,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('toggle-register-btn')?.addEventListener('click', () => setMode(!isRegisterMode));
 
-  // ── Submit formulario ──
+
   document.getElementById('email-auth-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideLoginAlert();
@@ -140,32 +143,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!email || !pass) { showLoginAlert('Completa el correo y la contraseña.'); return; }
 
-    if (isRegisterMode) {
-      if (!name)   { showLoginAlert('Escribe tu nombre completo.'); return; }
-      if (!carnet) { showLoginAlert('Escribe tu número de carnet.'); return; }
-      if (pass !== pass2) { showLoginAlert('Las contraseñas no coinciden.'); return; }
-      if (pass.length < 6) { showLoginAlert('La contraseña debe tener al menos 6 caracteres.'); return; }
+    try {
+      if (isRegisterMode) {
+        if (!name)   { showLoginAlert('Escribe tu nombre completo.'); return; }
+        if (!carnet) { showLoginAlert('Escribe tu número de carnet.'); return; }
+        if (pass !== pass2) { showLoginAlert('Las contraseñas no coinciden.'); return; }
+        if (pass.length < 6) { showLoginAlert('La contraseña debe tener al menos 6 caracteres.'); return; }
 
-      btn.disabled = true;
-      btn.textContent = 'Creando cuenta...';
-      try {
+        isRegistering = true;
+        btn.disabled = true;
+        btn.textContent = 'Creando cuenta...';
         await registerWithEmail(name, carnet, email, pass);
-        // onAuthChange se encarga de cerrar el overlay automáticamente
-      } catch (err) {
-        showLoginAlert(err.message.length < 80 ? err.message : authErrorMsg(err.code));
-        btn.disabled = false;
-        btn.textContent = 'Crear cuenta';
-      }
-    } else {
-      btn.disabled = true;
-      btn.textContent = 'Ingresando...';
-      try {
+        // Exitoso: onAuthChange cerrará el form porque quitaremos isRegistering
+        isRegistering = false;
+        if (auth.currentUser) onAuthChange(auth.currentUser); // Forzar trigger por si acaso
+      } else {
+        btn.disabled = true;
+        btn.textContent = 'Ingresando...';
         await loginWithEmail(email, pass);
-      } catch (err) {
-        showLoginAlert(authErrorMsg(err.code));
-        btn.disabled = false;
-        btn.textContent = 'Iniciar Sesión';
       }
+    } catch (err) {
+      isRegistering = false;
+      const msg = (err.message && err.message.length < 150) ? err.message : authErrorMsg(err.code);
+      showLoginAlert(msg);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = isRegisterMode ? 'Crear cuenta' : 'Iniciar Sesión';
     }
   });
 
